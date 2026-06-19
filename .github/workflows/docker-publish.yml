@@ -72,13 +72,17 @@ jobs:
       - name: Get Commit Messages
         id: get_commit_messages
         run: |
+          set +e
           # Get the latest tag
-          LATEST_TAG=$(git describe --tags --abbrev=0 HEAD^)
+          LATEST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null)
+          set -e
 
           # If there is no latest tag, get only the latest commit message
           if [ -z "$LATEST_TAG" ]; then
+            # 不存在历史tag，取本次提交说明
             COMMITS=$(git log -1 --pretty=format:'- %s (%h)')
           else
+            # 存在tag，取两个版本之间所有提交
             COMMITS=$(git log --pretty=format:'- %s (%h)' --no-merges "$LATEST_TAG"..HEAD)
           fi
 
