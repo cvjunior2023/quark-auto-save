@@ -33,6 +33,7 @@ except:
 CONFIG_DATA = {}
 NOTIFYS = []
 GH_PROXY = os.environ.get("GH_PROXY", "https://ghproxy.net/")
+QUARK_SIGN_NOTIFY = False
 
 
 # 发送通知消息
@@ -50,12 +51,15 @@ def send_ql_notify(title, body):
         if e:
             print("发送通知消息失败！")
 
-
 # 添加消息
 def add_notify(text):
-    global NOTIFYS
-    NOTIFYS.append(text)
-    print("📢", text)
+    global QUARK_SIGN_NOTIFY
+    if (not QUARK_SIGN_NOTIFY):
+        print(text)
+    else:
+        print("📢", text)
+        global NOTIFYS
+        NOTIFYS.append(text)
     return text
 
 
@@ -1126,23 +1130,14 @@ def do_sign(account):
         if growth_info["cap_sign"]["sign_daily"]:
             sign_message = f"📅 签到记录: 今日已签到+{int(growth_info['cap_sign']['sign_daily_reward']/1024/1024)}MB，连签进度({growth_info['cap_sign']['sign_progress']}/{growth_info['cap_sign']['sign_target']})✅"
             message = f"{sign_message}\n{growth_message}"
-            print(message)
+            add_notify(message)
         else:
             sign, sign_return = account.get_growth_sign()
             if sign:
                 sign_message = f"📅 执行签到: 今日签到+{int(sign_return/1024/1024)}MB，连签进度({growth_info['cap_sign']['sign_progress']+1}/{growth_info['cap_sign']['sign_target']})✅"
                 message = f"{sign_message}\n{growth_message}"
-                if (
-                    str(
-                        CONFIG_DATA.get("push_config", {}).get("QUARK_SIGN_NOTIFY")
-                    ).lower()
-                    == "false"
-                    or os.environ.get("QUARK_SIGN_NOTIFY") == "false"
-                ):
-                    print(message)
-                else:
-                    message = message.replace("今日", f"[{account.nickname}]今日")
-                    add_notify(message)
+                message = message.replace("今日", f"[{account.nickname}]今日")
+                add_notify(message)
             else:
                 print(f"📅 签到异常: {sign_return}")
     else:
@@ -1290,6 +1285,8 @@ def main():
         Config.breaking_change_update(CONFIG_DATA)
         cookie_val = CONFIG_DATA.get("cookie")
         cookie_form_file = True
+    global QUARK_SIGN_NOTIFY
+    QUARK_SIGN_NOTIFY = str(CONFIG_DATA.get("push_config", {}).get("QUARK_SIGN_NOTIFY")).lower()== "true" or os.environ.get("QUARK_SIGN_NOTIFY") == "true"
     # 获取cookie
     cookies = Config.get_cookies(cookie_val)
     if not cookies:
